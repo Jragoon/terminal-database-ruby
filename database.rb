@@ -152,12 +152,11 @@ def delete_data(query, schema, data)
     end
 
     #-- Data deleted, write to Database --#
-    database = File.open("database.csv", "w")
-    data.each do |row|
-        database.write(row)
-        database.write("\n")
-    end
-    database.close
+    open("database.csv", "w") { |file|
+        data.each do |row|
+            file.puts row.join(",")
+        end
+    }
     return data
 end
 
