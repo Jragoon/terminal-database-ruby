@@ -37,8 +37,8 @@ end
 
 def print_examples(schema)
     insert_example = create_insert_example(schema.values)
-    delete_example = "Example deletion:  delete where (age < 18)"
-    filter_example = "Example selection: select where (honor student = true)"
+    delete_example = "Example deletion:  delete (age < 18)"
+    filter_example = "Example selection: select (honor student = true)"
     puts insert_example
     puts delete_example
     puts filter_example
@@ -90,14 +90,164 @@ def insert_data(query, schema, data)
     return data
 end
 
+def delete_data(query, schema, data)
+    filter = query.split("(").last.split(")").first.delete(' ').downcase
+    if filter.include? "="
+        value = filter.partition("=").last
+        field = filter.partition("=").first
+        i = 0
+        schema.keys.each_with_index do |name, index|
+            name = name.delete(' ').downcase
+            if name == field
+                i = index
+            end
+        end
+        data.delete_if { |d|
+            d[i].downcase.chomp == value
+        }
+    elsif filter.include? ">"
+        value = filter.partition(">").last
+        field = filter.partition(">").first
+        new_data = []
+        i = 0
+        schema.keys.each_with_index do |name, index|
+            name = name.downcase
+            if name == field
+                i = index
+            end
+        end
+        data.delete_if { |d|
+            case schema.values[i]
+            when "boolean"
+                puts "Invalid request."
+                return
+            when "float"
+                Float(d[i]) > Float(value)
+            else
+                d[i] > value
+            end
+        }
+    elsif filter.include? "<"
+        value = filter.partition("<").last
+        field = filter.partition("<").first
+        new_data = []
+        i = 0
+        schema.keys.each_with_index do |name, index|
+            name = name.downcase
+            if name == field
+                i = index
+            end
+        end
+        data.delete_if { |d|
+            case schema.values[i]
+            when "boolean"
+                puts "Invalid request."
+                return
+            when "float"
+                Float(d[i]) < Float(value)
+            else
+                d[i] < value
+            end
+        }
+    end
+
+    #-- Data deleted, write to Database --#
+    database = File.open("database.csv", "w")
+    data.each do |row|
+        database.write(row)
+        database.write("\n")
+    end
+    database.close
+    return data
+end
+
+def select_data(query, schema, data)
+    filter = query.split("(").last.split(")").first.delete(' ').downcase
+    if filter.include? "="
+        value = filter.partition("=").last
+        field = filter.partition("=").first
+        new_data = []
+        i = 0
+        schema.keys.each_with_index do |name, index|
+            name = name.delete(' ').downcase
+            if name == field
+                i = index
+            end
+        end
+        data.each do |d|
+            if d[i].downcase.chomp == value
+               new_data << d 
+            end
+        end
+        new_table = create_terminal_table(schema.keys, new_data)
+        puts new_table
+    elsif filter.include? ">"
+        value = filter.partition(">").last
+        field = filter.partition(">").first
+        new_data = []
+        i = 0
+        schema.keys.each_with_index do |name, index|
+            name = name.downcase
+            if name == field
+                i = index
+            end
+        end
+        data.each do |d|
+            case schema.values[i]
+            when "boolean"
+                puts "Invalid request."
+                return
+            when "float"
+                if Float(d[i]) > Float(value)
+                    new_data << d
+                end
+            else
+                if d[i] > value
+                new_data << d 
+                end
+            end
+        end
+        new_table = create_terminal_table(schema.keys, new_data)
+        puts new_table
+    elsif filter.include? "<"
+        value = filter.partition("<").last
+        field = filter.partition("<").first
+        new_data = []
+        i = 0
+        schema.keys.each_with_index do |name, index|
+            name = name.downcase
+            if name == field
+                i = index
+            end
+        end
+        data.each do |d|
+            case schema.values[i]
+            when "boolean"
+                puts "Invalid request."
+                return
+            when "float"
+                if Float(d[i]) < Float(value)
+                    new_data << d
+                end
+            else
+                if d[i] < value
+                new_data << d 
+                end
+            end
+        end
+        new_table = create_terminal_table(schema.keys, new_data)
+        puts new_table
+    end
+end
+
 def handle_input(query, schema, data)
     query = query.downcase
     if query.include? "insert"
         data = insert_data(query, schema, data)
     elsif query.include? "delete"
-        puts "Deleting"
+        delete_data(query, schema, data)
     elsif query.include? "select"
-        puts "Filtering"
+        select_data(query, schema, data)
     elsif query == "q" || query == "quit" || query == "exit"
         puts "Quitting..."
     elsif query == "help" || query == "h"
