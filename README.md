@@ -3,6 +3,9 @@
 This program manages a database (stored in database.csv, with a schema defined in schema.json) that can be accessed
 and updated through the terminal interface. Screenshots are provided at the bottom of this document.
 
+# Example
+![Alt text](screenshots/ruby-database.gif?raw=true "Demo")
+
 # Installing
 
 The program requires to Ruby gems, to install them, first install the `ruby` software package.
